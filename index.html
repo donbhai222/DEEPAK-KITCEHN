@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEEPAK KITCHEN NOVELTY - Grocery Billing</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f1f8;color:#222;display:flex;flex-direction:column;min-height:100vh}
+header{background:linear-gradient(135deg, #1b5e20, #2e7d32);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 10px rgba(0,0,0,0.15);position:relative}
+header h1{margin:0;font-size:25px} header span{font-size:13px;opacity:.85}
+
+.menu-btn{background:transparent;border:none;color:#fff;font-size:26px;cursor:pointer;padding:0 10px;margin-right:10px;display:flex;align-items:center}
+.sidebar{position:fixed;top:0;left:-280px;width:280px;height:100%;background:#0d3b11;box-shadow:4px 0 15px rgba(0,0,0,0.3);z-index:10001;transition:left 0.3s ease;padding:20px 15px;display:flex;flex-direction:column}
+.sidebar.active{left:0}
+.sidebar-header{display:flex;justify-content:space-between;align-items:center;color:#fff;border-bottom:1px solid #1e5223;padding-bottom:15px;margin-bottom:20px}
+.sidebar-header h3{margin:0;font-size:20px}
+.close-sidebar{background:none;border:none;color:#fff;font-size:24px;cursor:pointer}
+.sidebar-menu{display:flex;flex-direction:column;gap:12px}
+.sidebar-menu button{width:100%;text-align:left;border:0;border-radius:8px;padding:12px 16px;cursor:pointer;font-weight:bold;font-size:15px;transition:all 0.2s ease;box-shadow:0 2px 5px rgba(0,0,0,0.12)}
+.sidebar-menu button:hover{transform:translateX(5px);opacity:0.95}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:none}
+.overlay.active{display:block}
+
+.container{max-width:1200px;margin:20px auto;padding:0 16px;flex:1}
+h2{margin:10px 0 14px}.section{background:white;border-radius:14px;padding:18px;margin-bottom:18px;box-shadow:0 3px 12px #00000012}
+.tables{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px}
+.table-btn{border:0;border-radius:12px;padding:16px 8px;font-size:17px;font-weight:bold;cursor:pointer;background:#eee;transition:all 0.2s ease}
+.table-btn:hover{transform:translateY(-2px);box-shadow:0 4px 8px rgba(0,0,0,0.15)}
+.table-btn.premium{border-left:5px solid #2e7d32;background:#e8f5e9;color:#1b5e20}
+.table-btn.standard{border-left:5px solid #1976d2;background:#e3f2fd;color:#0d47a1}
+.table-btn.running{background:#fff3e0;border-left-color:#ff9800;color:#e65100}
+.small{font-size:12px;font-weight:normal;display:block;margin-top:5px}
+.hidden{display:none}
+.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
+input,select,button{font:inherit}input,select{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px}
+
+.row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center}
+.search-wrapper{position:relative;width:100%;grid-column:span 4}
+.search-results{position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #2e7d32;border-radius:8px;max-height:180px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.15);display:none}
+.search-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid #eee;display:flex;justify-content:space-between;font-size:14px}
+.search-item:last-child{border-bottom:none}
+.search-item:hover, .search-item.selected{background:#e8f5e9;color:#1b5e20;font-weight:bold}
+
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+.actions button, .btn-action{border:0;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:bold;transition:all 0.2s ease;box-shadow:0 2px 5px rgba(0,0,0,0.12)}
+.actions button:hover, .btn-action:hover{transform:scale(1.02);opacity:0.95}
+
+.btn-report{background:linear-gradient(135deg, #1e88e5, #1565c0);color:#fff}
+.btn-closing{background:linear-gradient(135deg, #2e7d32, #1b5e20);color:#fff}
+.btn-item-master{background:linear-gradient(135deg, #e91e63, #ad1457);color:#fff}
+.btn-reset{background:linear-gradient(135deg, #ff9800, #f57c00);color:#fff}
+.btn-kot{background:linear-gradient(135deg, #d81b60, #8e24aa);color:#fff}
+.settle{background:linear-gradient(135deg,#00897b,#00695c);color:#fff}
+.settle-box{width:min(560px,94vw);max-height:90vh;overflow:auto;margin:0}
+.settle-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.settle-summary{background:#f1f8e9;border:1px solid #c8e6c9;border-radius:10px;padding:12px;margin:12px 0}
+.settle-total{font-size:24px;font-weight:bold;text-align:right;color:#2e7d32;margin-top:10px}
+@media(max-width:600px){.settle-grid{grid-template-columns:1fr}}
+
+.primary{background:linear-gradient(135deg, #2e7d32, #1b5e20);color:#fff}
+.green{background:linear-gradient(135deg, #2e7d32, #1b5e20);color:#fff}
+.gray{background:linear-gradient(135deg, #78909c, #455a64);color:#fff}
+.blue{background:linear-gradient(135deg, #0288d1, #01579b);color:#fff}
+.add{background:linear-gradient(135deg, #009688, #00695c);color:white;border:0;border-radius:8px;padding:10px 16px;cursor:pointer;font-weight:bold}
+
+.bill{border-collapse:collapse;width:100%;margin-top:12px}.bill th,.bill td{border-bottom:1px solid #ddd;padding:9px;text-align:left}
+.total{text-align:right;font-size:22px;font-weight:bold;margin-top:15px;color:#2e7d32}
+.back{margin-bottom:12px}
+
+.item-manage-list{margin-top:15px;max-height:250px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:8px;padding:8px;background:#fafafa}
+.item-manage-row{display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid #eee;background:#fff;margin-bottom:4px;border-radius:6px}
+.item-manage-row:last-child{border-bottom:none;margin-bottom:0}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:6px;border:none;cursor:pointer;margin-left:4px;font-weight:bold;color:#fff}
+.btn-edit{background:#0288d1}
+.btn-del{background:#d32f2f}
+
+footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14px;font-weight:bold;letter-spacing:0.5px;box-shadow:0 -2px 8px rgba(0,0,0,0.1)}
+
+@media(max-width:750px){
+  .grid{grid-template-columns:1fr}
+  .row{grid-template-columns:1fr 1fr auto;gap:8px}
+  .search-wrapper{grid-column:span 3}
+  header{padding:15px}.section{padding:13px}
+}
+
+#kotPrintArea{display:none}
+
+.bill-footer-desc{margin-top:20px;padding-top:10px;border-top:1px solid #ccc;font-size:12px;color:#555;text-align:center}
+
+/* Normal A4 Printer Specific Styles */
+@media print{
+  body{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:13px;margin:0;padding:15px}
+  header,.back,.no-print,#cloudSetup,#cloudStatus,button,footer,.sidebar,.overlay,#loginModal{display:none!important}
+  .container{max-width:100%;margin:0;padding:0}
+  .section{box-shadow:none;padding:0;margin:0;border-radius:0}
+  .grid{display:block}
+  .print-head{border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:15px;text-align:center}
+  .print-head h2{font-size:26px;color:#000;margin:0;font-weight:bold}
+  .print-meta{font-size:13px;margin-top:8px;display:flex;justify-content:space-between;border-top:1px solid #ccc;padding-top:6px}
+  .bill th, .bill td{padding:8px;font-size:13px;border-bottom:1px solid #aaa}
+  .total{font-size:18px;text-align:right;margin-top:15px;border-top:2px solid #000;padding-top:8px}
+  @page{size:A4 portrait;margin:15mm}
+
+  body.printing-kot .container, body.printing-kot header, body.printing-kot footer{display:none!important}
+  body.printing-kot #kotPrintArea{display:block!important;padding:10px}
+}
+
+.hint{color:#666;font-size:13px;margin-top:-5px}
+.charge-row{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center}
+
+.print-head{text-align:center;border-bottom:2px solid #2e7d32;padding-bottom:10px;margin-bottom:12px}
+.print-head h2{margin:0;color:#2e7d32;font-size:24px}.print-head>div{margin-top:4px}
+.print-meta{display:flex;justify-content:space-between;font-size:12px;margin-top:10px}
+@media screen{.print-head{background:#f1f8e9;padding:12px;border-radius:10px}}
+
+.report-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:15px 0}
+.report-cards>div{background:#f1f8e9;border:1px solid #c8e6c9;border-radius:10px;padding:14px;text-align:center}
+.report-cards span{display:block;color:#666;font-size:12px;margin-bottom:6px}.report-cards b{font-size:20px;color:#2e7d32}
+@media(max-width:750px){.report-cards{grid-template-columns:repeat(2,1fr)}}
+
+#loginModal{position:fixed;inset:0;background:rgba(10,40,15,0.85);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:20000}
+#loginModal.hidden{display:none}
+.login-box{background:#fff;width:min(400px,90vw);border-radius:16px;padding:30px;box-shadow:0 15px 35px rgba(0,0,0,0.3);text-align:center}
+.login-box h2{color:#2e7d32;margin-top:0;margin-bottom:8px}
+.login-box p{color:#666;font-size:13px;margin-bottom:20px}
+.login-box label{display:block;text-align:left;font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
+.login-box input{margin-bottom:16px}
+.login-error{color:#d32f2f;font-size:13px;margin-bottom:12px;min-height:18px;font-weight:bold}
+
+.table-btn .amount{font-size:12px;margin-top:4px;display:block;color:#333}
+.cust-info-box{background:#fafafa;padding:12px;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:15px}
+.cust-info-box label{font-size:12px;font-weight:bold;color:#444}
+.cust-info-box input{margin-top:4px;margin-bottom:8px}
+</style>
+</head>
+<body>
+
+<!-- Login Panel Modal -->
+<div id="loginModal">
+  <div class="login-box">
+    <h2>🛍️ DEEPAK KITCHEN NOVELTY</h2>
+    <p>Grocery & General Store Billing System</p>
+    <label>Username</label>
+    <input id="loginUser" placeholder="Enter Username" autocomplete="off">
+    <label>Password</label>
+    <input id="loginPass" type="password" placeholder="Enter Password" onkeydown="handleLoginKey(event)">
+    <div id="loginError" class="login-error"></div>
+    <button class="primary" style="width:100%;padding:12px;font-size:16px;border-radius:8px" onclick="checkLogin()">Login System</button>
+  </div>
+</div>
+
+<div id="kotPrintArea"></div>
+
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header">
+    <h3>Menu Options</h3>
+    <button class="close-sidebar" onclick="toggleSidebar()">✕</button>
+  </div>
+  <div class="sidebar-menu">
+    <button class="btn-report" onclick="showReports(); toggleSidebar();">📊 Daily Report</button>
+    <button class="btn-closing" onclick="showClosing(); toggleSidebar();">🔒 Daily Closing</button>
+    <button class="btn-item-master" onclick="showItemMaster(); toggleSidebar();">🛒 Item Master</button>
+    <button class="btn-reset" onclick="resetAllData(); toggleSidebar();">↺ Reset Demo Data</button>
+  </div>
+</div>
+
+<header>
+  <div style="display:flex;align-items:center;">
+    <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+    <h1>DEEPAK KITCHEN NOVELTY</h1>
+  </div>
+  <span>Grocery & Kitchenware Billing</span>
+</header>
+
+<div class="container">
+<div id="home">
+  <div class="section">
+    <h2>🛒 Billing Counters / Slots (1 to 8)</h2>
+    <div id="premium" class="tables"></div>
+  </div>
+  <div class="section">
+    <h2>📦 Express / Order Slots (9 to 28)</h2>
+    <div id="standard" class="tables"></div>
+  </div>
+</div>
+
+<div id="itemMasterView" class="hidden">
+  <div class="section">
+    <button class="back gray no-print" onclick="hideItemMaster()">← Back to Counters</button>
+    <h2>🛒 Item Master (Grocery Menu Management)</h2>
+    <p class="hint">Naye grocery items add karein ya purane items ka name aur rate update/delete karein.</p>
+    <div class="row no-print" style="grid-template-columns:1fr 1fr auto">
+      <input id="newItemName" placeholder="Item Name (e.g. Sugar 1kg, Oil 1L)">
+      <input id="newItemRate" type="number" min="0" placeholder="Rate (₹)">
+      <button class="add" onclick="addMenuItem()">+ Add / Update Item</button>
+    </div>
+    
+    <h3 style="margin-top:20px;">📋 Existing Grocery Items</h3>
+    <div id="menuManageList" class="item-manage-list"></div>
+  </div>
+</div>
+
+<div id="reports" class="hidden">
+  <div class="section">
+    <button class="back gray no-print" onclick="hideReports()">← Back to Counters</button>
+    <h2>📊 Daily Sales Report</h2>
+    <div class="report-cards">
+      <div><span>Total Bills</span><b id="rBills">0</b></div>
+      <div><span>Total Sales</span><b>₹ <span id="rSales">0.00</span></b></div>
+      <div><span>Cash</span><b>₹ <span id="rCash">0.00</span></b></div>
+      <div><span>UPI</span><b>₹ <span id="rUpi">0.00</span></b></div>
+      <div><span>Card</span><b>₹ <span id="rCard">0.00</span></b></div>
+    </div>
+    <h3>Bill List</h3>
+    <table class="bill">
+      <thead><tr><th>Bill No</th><th>Counter</th><th>Customer Name</th><th>Payment</th><th>Total</th><th class="no-print">Action</th></tr></thead>
+      <tbody id="reportRows"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="closing" class="hidden">
+  <div class="section">
+    <button class="back gray no-print" onclick="hideClosing()">← Back to Counters</button>
+    <h2>🔒 Store Closing Report</h2>
+    <p>Payment aur Counter-wise final collection ka summary.</p>
+    <div class="report-cards">
+      <div><span>Total Bills</span><b id="cBills">0</b></div>
+      <div><span>Total Sales</span><b>₹ <span id="cSales">0.00</span></b></div>
+      <div><span>Cash</span><b>₹ <span id="cCash">0.00</span></b></div>
+      <div><span>UPI</span><b>₹ <span id="cUpi">0.00</span></b></div>
+      <div><span>Card</span><b>₹ <span id="cCard">0.00</span></b></div>
+    </div>
+    <table class="bill">
+      <thead><tr><th>Counter</th><th>Bill No</th><th>Payment</th><th>Total</th><th class="no-print">Action</th></tr></thead>
+      <tbody id="closingRows"></tbody>
+    </table>
+    <div class="actions no-print"><button class="primary" onclick="window.print()">🖨 Print Closing Report</button></div>
+  </div>
+</div>
+
+<div id="settleModal" class="hidden" style="position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:10000">
+  <div class="section settle-box">
+    <button class="back gray no-print" onclick="closeSettle()">← Back</button>
+    <h2>💰 Settle & Print Bill</h2>
+    <p><b>Counter:</b> <span id="settleTable">-</span> &nbsp; <b>Bill No:</b> <span id="settleBillNo">-</span></p>
+    
+    <!-- Customer Details Form -->
+    <div class="cust-info-box">
+      <label>Customer Name (Saman Kharidne Wale Ka Naam)</label>
+      <input id="settleGuest" placeholder="Enter Buyer Name">
+      <label>Mobile Number</label>
+      <input id="settleMobile" placeholder="Enter Mobile No. (Optional)">
+      <label>Address</label>
+      <input id="settleAddress" placeholder="Customer Address (Optional)">
+    </div>
+
+    <div class="settle-summary">
+      <p><b>Subtotal:</b> ₹ <span id="settleSubtotal">0.00</span></p>
+      <div class="settle-grid">
+        <div><label>Discount</label><input id="settleDiscount" type="number" min="0" value="0" oninput="renderSettle()"></div>
+        <div><label>Discount Type</label><select id="settleDiscountType" onchange="renderSettle()"><option value="amount">₹ Amount</option><option value="percent">% Percent</option></select></div>
+        <div><label>GST %</label><input id="settleGst" type="number" min="0" value="0" oninput="renderSettle()"></div>
+        <div><label>Adjustment (₹)</label><input id="settleAdjustment" type="number" value="0" oninput="renderSettle()" placeholder="+ / - amount"></div>
+      </div>
+      <p><b>Discount:</b> ₹ <span id="settleDiscountValue">0.00</span></p>
+      <p><b>GST:</b> ₹ <span id="settleGstValue">0.00</span></p>
+      <p><b>Adjustment:</b> ₹ <span id="settleAdjustmentValue">0.00</span></p>
+      <div class="settle-total">Final Payable: ₹ <span id="settleFinalTotal">0.00</span></div>
+    </div>
+    
+    <label>Payment Mode</label>
+    <select id="settlePayment"><option>Cash</option><option>UPI</option><option>Card</option></select>
+    <br><br>
+
+    <div class="actions no-print">
+      <button class="settle" onclick="settleBill(false)">✅ Settle Bill Only</button>
+      <button class="primary" onclick="settleBill(true)">🖨 Settle & Print Bill</button>
+      <button class="gray" onclick="closeSettle()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="billing" class="hidden">
+  <button class="back gray" onclick="goHome()">← Back to Counters</button>
+  <div class="grid">
+    <div class="section">
+      <div class="print-head">
+        <h2>DEEPAK KITCHEN NOVELTY</h2>
+        <div style="font-size:14px;font-weight:bold;">GROCERY & GENERAL STORE</div>
+        <div style="font-size:12px;color:#444;">Deals in: Kitchenware, Spices, Grocery & Daily Essentials</div>
+        <div class="print-meta">
+          <span>Bill No: <b id="printBillNo">-</b></span>
+          <span>Date: <b id="printDate">-</b> | Time: <b id="printTime">-</b></span>
+        </div>
+        <div id="printCustomerMeta" style="text-align:left;margin-top:8px;font-size:13px;border-top:1px dashed #bbb;padding-top:6px;">
+          <!-- Customer details print here dynamically -->
+        </div>
+      </div>
+      <h2 id="tableTitle"></h2>
+      
+      <div class="row no-print">
+        <div class="search-wrapper">
+          <input id="item" placeholder="🔍 Search & Add Grocery Item..." oninput="searchItems()" onfocus="searchItems()" onkeydown="handleSearchKey(event)" autocomplete="off">
+          <div id="searchResults" class="search-results"></div>
+        </div>
+        <input id="qty" type="number" min="1" value="1" placeholder="Qty">
+        <input id="rate" type="number" min="0" value="0" placeholder="Rate" readonly>
+        <button class="add" onclick="addItem()">+ Add Item</button>
+      </div>
+
+      <table class="bill">
+        <thead><tr><th>Item Description</th><th>Qty</th><th>Rate</th><th>Amount</th><th class="no-print"></th></tr></thead>
+        <tbody id="items"></tbody>
+      </table>
+      <div class="total">Grand Total: ₹ <span id="total">0.00</span></div>
+
+      <!-- Professional Grocery Description Footer -->
+      <div class="bill-footer-desc">
+        <p><b>Terms & Conditions:</b> Goods once sold will not be taken back without valid bill. Please check your items and change before leaving the counter.</p>
+        <p><b>Thank You For Shopping With DEEPAK KITCHEN NOVELTY! Visit Again!</b></p>
+      </div>
+
+      <div class="actions no-print">
+        <button class="settle" onclick="openSettle()">💰 Settle & Print Bill</button>
+        <button class="btn-reset" style="padding:11px 16px" onclick="clearBill()">Clear Bill</button>
+      </div>
+    </div>
+
+    <div class="section no-print">
+      <h2>Buyer & Payment Info</h2>
+      <label>Customer Name (Saman Kharidne Wale Ka Naam)</label>
+      <input id="guest" placeholder="Name" onchange="updateGuestInfo()">
+      <br><br>
+      <label>Customer Mobile No.</label>
+      <input id="guestMobile" placeholder="Mobile No." onchange="updateGuestInfo()">
+      <br><br>
+      <label>Payment Mode</label>
+      <select id="payment"><option>Cash</option><option>UPI</option><option>Card</option></select>
+      <br><br>
+      <label>Discount</label>
+      <div class="charge-row"><input id="discount" type="number" min="0" value="0" oninput="render()"><select id="discountType" onchange="render()"><option value="amount">₹ Amount</option><option value="percent">% Percent</option></select></div>
+      <br>
+      <label>GST</label>
+      <div class="charge-row"><input id="discountGst" type="number" min="0" value="0" oninput="render()"><span>%</span></div>
+      <br>
+      <p><b>Subtotal:</b> ₹ <span id="subtotal">0.00</span></p>
+      <p><b>Discount:</b> ₹ <span id="discountValue">0.00</span></p>
+      <p><b>GST:</b> ₹ <span id="gstValue">0.00</span></p>
+      <p><b>Status:</b> <span id="status">Available</span></p>
+      <p><b>Bill No:</b> <span id="billNo">-</span></p>
+    </div>
+  </div>
+</div>
+</div>
+
+<footer class="no-print">
+  DEEPAK KITCHEN NOVELTY — Smart Billing Software
+</footer>
+
+<script>
+let data = JSON.parse(localStorage.getItem('deepakGroceryBills') || '{}');
+let settledBills = JSON.parse(localStorage.getItem('deepakGrocerySettledBills') || '[]');
+let menu = JSON.parse(localStorage.getItem('deepakGroceryMenu') || 'null') || [
+  {name:'Sugar 1kg', rate:45},
+  {name:'Mustard Oil 1L', rate:160},
+  {name:'Fortune Atta 5kg', rate:230},
+  {name:'Toor Dal 1kg', rate:140},
+  {name:'Tata Salt 1kg', rate:28},
+  {name:'Tea Powder 250g', rate:120}
+];
+
+let current = null;
+let selectedSearchIndex = -1;
+
+window.onload = function() {
+  renderTables();
+};
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function checkLogin(){
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+  const err = document.getElementById('loginError');
+
+  if(user === 'deepak' && pass === '1234'){
+    document.getElementById('loginModal').classList.add('hidden');
+  } else {
+    err.textContent = 'Invalid Username or Password! (Try: deepak / 1234)';
+  }
+}
+
+function handleLoginKey(e){
+  if(e.key === 'Enter') checkLogin();
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('active');
+  document.getElementById('overlay').classList.toggle('active');
+}
+
+function renderTables(){
+  const premDiv = document.getElementById('premium');
+  const stdDiv = document.getElementById('standard');
+  if(!premDiv || !stdDiv) return;
+
+  premDiv.innerHTML = '';
+  stdDiv.innerHTML = '';
+
+  for(let i=1; i<=8; i++){
+    const tId = 'C' + i;
+    premDiv.appendChild(createTableButton(tId, 'premium'));
+  }
+
+  for(let i=9; i<=28; i++){
+    const tId = 'C' + i;
+    stdDiv.appendChild(createTableButton(tId, 'standard'));
+  }
+}
+
+function createTableButton(tId, typeClass){
+  const btn = document.createElement('button');
+  const runningData = data[tId];
+  const isRunning = runningData && runningData.items && runningData.items.length > 0;
+
+  btn.className = `table-btn ${typeClass} ${isRunning ? 'running' : ''}`;
+  
+  let totalAmt = 0;
+  if(isRunning){
+    totalAmt = calculateTotal(runningData);
+  }
+
+  btn.innerHTML = `
+    ${tId}
+    <span class="small">${isRunning ? 'Active Bill' : 'Available'}</span>
+    ${isRunning ? `<span class="amount">₹ ${totalAmt.toFixed(2)}</span>` : ''}
+  `;
+  btn.onclick = () => openTable(tId);
+  return btn;
+}
+
+function openTable(tId){
+  current = tId;
+  if(!data[current]){
+    data[current] = {
+      items: [],
+      discount: 0,
+      discountType: 'amount',
+      gst: 0,
+      payment: 'Cash',
+      guest: '',
+      mobile: '',
+      address: '',
+      billNo: 'DKN-' + (1000 + Math.floor(Math.random() * 9000))
+    };
+  }
+
+  document.getElementById('tableTitle').textContent = `Counter: ${current}`;
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('billing').classList.remove('hidden');
+  
+  document.getElementById('payment').value = data[current].payment || 'Cash';
+  document.getElementById('guest').value = data[current].guest || '';
+  document.getElementById('guestMobile').value = data[current].mobile || '';
+  document.getElementById('discount').value = data[current].discount || 0;
+  document.getElementById('discountType').value = data[current].discountType || 'amount';
+  document.getElementById('discountGst').value = data[current].gst || 0;
+
+  const now = new Date();
+  document.getElementById('printBillNo').textContent = data[current].billNo;
+  document.getElementById('printDate').textContent = now.toLocaleDateString();
+  document.getElementById('printTime').textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+  render();
+}
+
+function updateGuestInfo() {
+  if(!data[current]) return;
+  data[current].guest = document.getElementById('guest').value.trim();
+  data[current].mobile = document.getElementById('guestMobile').value.trim();
+  saveRunningData();
+  updatePrintCustomerMeta();
+}
+
+function updatePrintCustomerMeta() {
+  const cur = data[current];
+  const metaDiv = document.getElementById('printCustomerMeta');
+  if (cur && (cur.guest || cur.mobile || cur.address)) {
+    metaDiv.innerHTML = `
+      <b>Buyer / Customer Details:</b><br>
+      ${cur.guest ? 'Name: ' + escapeHtml(cur.guest) + '<br>' : ''}
+      ${cur.mobile ? 'Mobile: ' + escapeHtml(cur.mobile) + '<br>' : ''}
+      ${cur.address ? 'Address: ' + escapeHtml(cur.address) : ''}
+    `;
+  } else {
+    metaDiv.innerHTML = `<b>Customer:</b> Cash Customer`;
+  }
+}
+
+function goHome(){
+  document.getElementById('billing').classList.add('hidden');
+  document.getElementById('home').classList.remove('hidden');
+  renderTables();
+}
+
+function addItem(){
+  const name = document.getElementById('item').value.trim();
+  const qty = Number(document.getElementById('qty').value);
+  const rate = Number(document.getElementById('rate').value);
+
+  if(!name || qty <= 0 || rate < 0){
+    alert('Sahi grocery item, quantity aur rate bharein.');
+    return;
+  }
+
+  if(!data[current]) return;
+
+  const existing = data[current].items.find(x => x.name.toLowerCase() === name.toLowerCase());
+  if(existing){
+    existing.qty += qty;
+  } else {
+    data[current].items.push({name, qty, rate});
+  }
+
+  document.getElementById('item').value = '';
+  document.getElementById('qty').value = 1;
+  document.getElementById('rate').value = 0;
+
+  saveRunningData();
+  render();
+  document.getElementById('item').focus();
+}
+
+function removeItem(index){
+  if(!data[current]) return;
+  data[current].items.splice(index, 1);
+  saveRunningData();
+  render();
+}
+
+function render(){
+  if(!current || !data[current]) return;
+
+  const cur = data[current];
+  cur.payment = document.getElementById('payment').value;
+  cur.guest = document.getElementById('guest').value;
+  cur.mobile = document.getElementById('guestMobile').value;
+  cur.discount = Number(document.getElementById('discount').value || 0);
+  cur.discountType = document.getElementById('discountType').value;
+  cur.gst = Number(document.getElementById('discountGst').value || 0);
+
+  const tbody = document.getElementById('items');
+  tbody.innerHTML = '';
+
+  let subtotal = 0;
+  cur.items.forEach((item, index) => {
+    const amt = item.qty * item.rate;
+    subtotal += amt;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(item.name)}</td>
+      <td>${item.qty}</td>
+      <td>₹ ${item.rate}</td>
+      <td>₹ ${amt.toFixed(2)}</td>
+      <td class="no-print"><button class="btn-sm btn-del" onclick="removeItem(${index})">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  let d = cur.discount;
+  let discountVal = cur.discountType === 'percent' ? (subtotal * d / 100) : d;
+  discountVal = Math.min(Math.max(discountVal, 0), subtotal);
+
+  let afterDiscount = subtotal - discountVal;
+  let gstVal = (afterDiscount * cur.gst) / 100;
+  let grandTotal = afterDiscount + gstVal;
+
+  document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+  document.getElementById('discountValue').textContent = discountVal.toFixed(2);
+  document.getElementById('gstValue').textContent = gstVal.toFixed(2);
+  document.getElementById('total').textContent = grandTotal.toFixed(2);
+  document.getElementById('billNo').textContent = cur.billNo;
+  document.getElementById('status').textContent = cur.items.length > 0 ? 'Active' : 'Available';
+
+  updatePrintCustomerMeta();
+  saveRunningData();
+}
+
+function saveRunningData(){
+  localStorage.setItem('deepakGroceryBills', JSON.stringify(data));
+}
+
+function clearBill(){
+  if(confirm('Kya aap is bill ke saare items hatana chahte hain?')){
+    data[current].items = [];
+    saveRunningData();
+    render();
+  }
+}
+
+function openSettle(){
+  if(!data[current] || data[current].items.length === 0){
+    alert('Settle karne ke liye bill me items hone chahiye!');
+    return;
+  }
+
+  document.getElementById('settleTable').textContent = current;
+  document.getElementById('settleBillNo').textContent = data[current].billNo;
+  document.getElementById('settleDiscount').value = data[current].discount || 0;
+  document.getElementById('settleDiscountType').value = data[current].discountType || 'amount';
+  document.getElementById('settleGst').value = data[current].gst || 0;
+  document.getElementById('settleAdjustment').value = 0;
+  document.getElementById('settlePayment').value = data[current].payment || 'Cash';
+  document.getElementById('settleGuest').value = data[current].guest || '';
+  document.getElementById('settleMobile').value = data[current].mobile || '';
+  document.getElementById('settleAddress').value = data[current].address || '';
+
+  renderSettle();
+  document.getElementById('settleModal').style.display = 'flex';
+}
+
+function closeSettle(){
+  document.getElementById('settleModal').style.display = 'none';
+}
+
+function renderSettle(){
+  const cur = data[current];
+  let subtotal = cur.items.reduce((s, x) => s + (x.qty * x.rate), 0);
+
+  let d = Number(document.getElementById('settleDiscount').value || 0);
+  let dType = document.getElementById('settleDiscountType').value;
+  let discountVal = dType === 'percent' ? (subtotal * d / 100) : d;
+  discountVal = Math.min(Math.max(discountVal, 0), subtotal);
+
+  let gst = Number(document.getElementById('settleGst').value || 0);
+  let afterDiscount = subtotal - discountVal;
+  let gstVal = (afterDiscount * gst) / 100;
+
+  let adj = Number(document.getElementById('settleAdjustment').value || 0);
+  let finalTotal = afterDiscount + gstVal + adj;
+
+  document.getElementById('settleSubtotal').textContent = subtotal.toFixed(2);
+  document.getElementById('settleDiscountValue').textContent = discountVal.toFixed(2);
+  document.getElementById('settleGstValue').textContent = gstVal.toFixed(2);
+  document.getElementById('settleAdjustmentValue').textContent = adj.toFixed(2);
+  document.getElementById('settleFinalTotal').textContent = Math.max(0, finalTotal).toFixed(2);
+}
+
+function settleBill(shouldPrint){
+  const cur = data[current];
+  let subtotal = cur.items.reduce((s, x) => s + (x.qty * x.rate), 0);
+  let d = Number(document.getElementById('settleDiscount').value || 0);
+  let dType = document.getElementById('settleDiscountType').value;
+  let discountVal = dType === 'percent' ? (subtotal * d / 100) : d;
+  discountVal = Math.min(Math.max(discountVal, 0), subtotal);
+
+  let gst = Number(document.getElementById('settleGst').value || 0);
+  let afterDiscount = subtotal - discountVal;
+  let gstVal = (afterDiscount * gst) / 100;
+  let adj = Number(document.getElementById('settleAdjustment').value || 0);
+  let finalTotal = Math.max(0, afterDiscount + gstVal + adj);
+
+  cur.guest = document.getElementById('settleGuest').value;
+  cur.mobile = document.getElementById('settleMobile').value;
+  cur.address = document.getElementById('settleAddress').value;
+
+  const settledRecord = {
+    billNo: cur.billNo,
+    tableId: current,
+    items: JSON.parse(JSON.stringify(cur.items)),
+    subtotal: subtotal,
+    discount: d,
+    discountType: dType,
+    discountValue: discountVal,
+    gst: gst,
+    gstValue: gstVal,
+    adjustment: adj,
+    finalTotal: finalTotal,
+    payment: document.getElementById('settlePayment').value,
+    guest: cur.guest,
+    mobile: cur.mobile,
+    address: cur.address,
+    settledAt: new Date().toISOString()
+  };
+
+  settledBills.push(settledRecord);
+  localStorage.setItem('deepakGrocerySettledBills', JSON.stringify(settledBills));
+
+  updatePrintCustomerMeta();
+
+  delete data[current];
+  saveRunningData();
+
+  closeSettle();
+
+  if (shouldPrint) {
+    window.print();
+  }
+
+  alert(`Bill ${settledRecord.billNo} settled successfully!`);
+  goHome();
+}
+
+// Search and Autocomplete Logic
+function searchItems() {
+  const query = document.getElementById('item').value.toLowerCase().trim();
+  const resultsDiv = document.getElementById('searchResults');
+  resultsDiv.innerHTML = '';
+  selectedSearchIndex = -1;
+
+  if (!query) {
+    resultsDiv.style.display = 'none';
+    return;
+  }
+
+  const matches = menu.filter(x => x.name.toLowerCase().includes(query));
+  if (matches.length === 0) {
+    resultsDiv.style.display = 'none';
+    return;
+  }
+
+  matches.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = 'search-item';
+    div.innerHTML = `<span>${escapeHtml(item.name)}</span><b>₹ ${item.rate}</b>`;
+    div.onclick = () => selectSearchResult(item);
+    resultsDiv.appendChild(div);
+  });
+
+  resultsDiv.style.display = 'block';
+}
+
+function selectSearchResult(item) {
+  document.getElementById('item').value = item.name;
+  document.getElementById('rate').value = item.rate;
+  document.getElementById('searchResults').style.display = 'none';
+  document.getElementById('qty').focus();
+}
+
+function handleSearchKey(e) {
+  const resultsDiv = document.getElementById('searchResults');
+  const items = resultsDiv.getElementsByClassName('search-item');
+
+  if (e.key === 'ArrowDown') {
+    selectedSearchIndex = Math.min(selectedSearchIndex + 1, items.length - 1);
+    updateSearchHighlight(items);
+  } else if (e.key === 'ArrowUp') {
+    selectedSearchIndex = Math.max(selectedSearchIndex - 1, 0);
+    updateSearchHighlight(items);
+  } else if (e.key === 'Enter') {
+    if (selectedSearchIndex >= 0 && items[selectedSearchIndex]) {
+      items[selectedSearchIndex].click();
+    } else {
+      addItem();
+    }
+  }
+}
+
+function updateSearchHighlight(items) {
+  Array.from(items).forEach((item, idx) => {
+    item.classList.toggle('selected', idx === selectedSearchIndex);
+  });
+}
+
+// Item Master (Menu Management)
+function showItemMaster() {
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('itemMasterView').classList.remove('hidden');
+  renderItemManageList();
+}
+
+function hideItemMaster() {
+  document.getElementById('itemMasterView').classList.add('hidden');
+  document.getElementById('home').classList.remove('hidden');
+}
+
+function renderItemManageList() {
+  const container = document.getElementById('menuManageList');
+  container.innerHTML = '';
+
+  menu.forEach((item, index) => {
+    const row = document.createElement('div');
+    row.className = 'item-manage-row';
+    row.innerHTML = `
+      <div><b>${escapeHtml(item.name)}</b> - ₹ ${item.rate}</div>
+      <div>
+        <button class="btn-sm btn-edit" onclick="editMenuItem(${index})">Edit</button>
+        <button class="btn-sm btn-del" onclick="deleteMenuItem(${index})">Delete</button>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function addMenuItem() {
+  const nameInput = document.getElementById('newItemName');
+  const rateInput = document.getElementById('newItemRate');
+  const name = nameInput.value.trim();
+  const rate = Number(rateInput.value);
+
+  if (!name || rate < 0) {
+    alert('Please enter valid item name and rate.');
+    return;
+  }
+
+  const existingIdx = menu.findIndex(x => x.name.toLowerCase() === name.toLowerCase());
+  if (existingIdx >= 0) {
+    menu[existingIdx].rate = rate;
+  } else {
+    menu.push({ name, rate });
+  }
+
+  localStorage.setItem('deepakGroceryMenu', JSON.stringify(menu));
+  nameInput.value = '';
+  rateInput.value = '';
+  renderItemManageList();
+}
+
+function deleteMenuItem(index) {
+  if (confirm('Delete this item from menu?')) {
+    menu.splice(index, 1);
+    localStorage.setItem('deepakGroceryMenu', JSON.stringify(menu));
+    renderItemManageList();
+  }
+}
+
+function editMenuItem(index) {
+  const item = menu[index];
+  document.getElementById('newItemName').value = item.name;
+  document.getElementById('newItemRate').value = item.rate;
+}
+
+// Reports & Party Closing
+function showReports() {
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('reports').classList.remove('hidden');
+  renderReports();
+}
+
+function hideReports() {
+  document.getElementById('reports').classList.add('hidden');
+  document.getElementById('home').classList.remove('hidden');
+}
+
+function renderReports() {
+  let totalSales = 0, cash = 0, upi = 0, card = 0;
+  const tbody = document.getElementById('reportRows');
+  tbody.innerHTML = '';
+
+  settledBills.forEach((b) => {
+    totalSales += b.finalTotal;
+    if (b.payment === 'Cash') cash += b.finalTotal;
+    if (b.payment === 'UPI') upi += b.finalTotal;
+    if (b.payment === 'Card') card += b.finalTotal;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${b.billNo}</td>
+      <td>${b.tableId}</td>
+      <td>${escapeHtml(b.guest || 'Cash Customer')}</td>
+      <td>${b.payment}</td>
+      <td>₹ ${b.finalTotal.toFixed(2)}</td>
+      <td class="no-print"><button class="btn-sm btn-edit" onclick="alert('Bill Amount: ₹${b.finalTotal.toFixed(2)}')">View</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('rBills').textContent = settledBills.length;
+  document.getElementById('rSales').textContent = totalSales.toFixed(2);
+  document.getElementById('rCash').textContent = cash.toFixed(2);
+  document.getElementById('rUpi').textContent = upi.toFixed(2);
+  document.getElementById('rCard').textContent = card.toFixed(2);
+}
+
+function showClosing() {
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('closing').classList.remove('hidden');
+  renderClosing();
+}
+
+function hideClosing() {
+  document.getElementById('closing').classList.add('hidden');
+  document.getElementById('home').classList.remove('hidden');
+}
+
+function renderClosing() {
+  let totalSales = 0, cash = 0, upi = 0, card = 0;
+  const tbody = document.getElementById('closingRows');
+  tbody.innerHTML = '';
+
+  settledBills.forEach((b) => {
+    totalSales += b.finalTotal;
+    if (b.payment === 'Cash') cash += b.finalTotal;
+    if (b.payment === 'UPI') upi += b.finalTotal;
+    if (b.payment === 'Card') card += b.finalTotal;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${b.tableId}</td>
+      <td>${b.billNo}</td>
+      <td>${b.payment}</td>
+      <td>₹ ${b.finalTotal.toFixed(2)}</td>
+      <td class="no-print"><button class="btn-sm btn-edit" onclick="alert('Bill Amount: ₹${b.finalTotal.toFixed(2)}')">View</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('cBills').textContent = settledBills.length;
+  document.getElementById('cSales').textContent = totalSales.toFixed(2);
+  document.getElementById('cCash').textContent = cash.toFixed(2);
+  document.getElementById('cUpi').textContent = upi.toFixed(2);
+  document.getElementById('cCard').textContent = card.toFixed(2);
+}
+
+function resetAllData() {
+  if (confirm('Are you sure you want to reset all demo data and running bills?')) {
+    localStorage.removeItem('deepakGroceryBills');
+    localStorage.removeItem('deepakGrocerySettledBills');
+    data = {};
+    settledBills = [];
+    renderTables();
+    alert('System data reset successfully!');
+  }
+}
+
+function calculateTotal(runningData) {
+  let subtotal = runningData.items.reduce((sum, item) => sum + (item.qty * item.rate), 0);
+  let d = runningData.discount || 0;
+  let dVal = runningData.discountType === 'percent' ? (subtotal * d / 100) : d;
+  let afterD = subtotal - dVal;
+  let gstVal = (afterD * (runningData.gst || 0)) / 100;
+  return Math.max(0, afterD + gstVal);
+}
+</script>
+</body>
+</html>
