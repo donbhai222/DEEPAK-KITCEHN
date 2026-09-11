@@ -64,6 +64,10 @@ input,select,button{font:inherit}input,select{width:100%;padding:10px;border:1px
 
 footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14px;font-weight:bold;letter-spacing:0.5px;box-shadow:0 -2px 8px rgba(0,0,0,0.1)}
 
+.bill-summary-box{margin-top:15px;border-top:2px solid #2e7d32;padding-top:10px}
+.bill-summary-row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
+.bill-summary-row.bold{font-weight:bold;font-size:16px;color:#2e7d32}
+
 @media(max-width:750px){
   .grid{grid-template-columns:1fr}
   .row{grid-template-columns:1fr 1fr auto;gap:8px}
@@ -187,10 +191,26 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
       </div>
 
       <table class="bill">
-        <thead><tr><th>Item Description</th><th>Qty</th><th>Rate</th><th>Amount</th><th class="no-print"></th></tr></thead>
+        <thead>
+          <tr>
+            <th>Item Description</th>
+            <th>Qty</th>
+            <th>Unit</th>
+            <th>Rate</th>
+            <th>Amount</th>
+            <th class="no-print"></th>
+          </tr>
+        </thead>
         <tbody id="items"></tbody>
       </table>
-      <div class="total">Grand Total: ₹ <span id="total">0.00</span></div>
+
+      <!-- Bill Breakdown & Summary -->
+      <div class="bill-summary-box">
+        <div class="bill-summary-row"><span>Subtotal:</span><span>₹ <span id="printSubtotal">0.00</span></span></div>
+        <div class="bill-summary-row"><span>Discount:</span><span>- ₹ <span id="printDiscount">0.00</span></span></div>
+        <div class="bill-summary-row"><span>GST (<span id="printGstRate">0</span>%):</span><span>+ ₹ <span id="printGstValue">0.00</span></span></div>
+        <div class="bill-summary-row bold"><span>Grand Total:</span><span>₹ <span id="total">0.00</span></span></div>
+      </div>
 
       <div class="bill-footer-desc">
         <p><b>Terms & Conditions:</b> Goods once sold will not be taken back without valid bill. Please check your items before leaving.</p>
@@ -240,6 +260,7 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
   <div class="section">
     <button class="back gray no-print" onclick="hideItemMaster()">← Back to Billing</button>
     <h2>🛒 Item Master (Grocery Menu Management)</h2>
+    <input type="hidden" id="editingItemIndex" value="-1">
     <div class="row no-print" style="grid-template-columns:1.5fr 1fr 1fr auto">
       <input id="newItemName" placeholder="Item Name (e.g. Sugar)">
       <select id="newItemUnit">
@@ -254,7 +275,7 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
         <option value="PCS">PCS</option>
       </select>
       <input id="newItemRate" type="number" min="0" placeholder="Rate (₹)">
-      <button class="add" onclick="addMenuItem()">+ Add / Update Item</button>
+      <button id="saveItemBtn" class="add" onclick="addMenuItem()">+ Add Item</button>
     </div>
     <h3 style="margin-top:20px;">📋 Existing Items List</h3>
     <div id="menuManageList" class="item-manage-list"></div>
@@ -435,7 +456,8 @@ function render(){
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${escapeHtml(item.name)}</td>
-      <td>${item.qty} ${item.unit}</td>
+      <td>${item.qty}</td>
+      <td>${item.unit}</td>
       <td>₹ ${item.rate}</td>
       <td>₹ ${amt.toFixed(2)}</td>
       <td class="no-print"><button class="btn-sm btn-del" onclick="removeItem(${index})">✕</button></td>
@@ -456,6 +478,12 @@ function render(){
   document.getElementById('gstValue').textContent = gstVal.toFixed(2);
   document.getElementById('total').textContent = grandTotal.toFixed(2);
   document.getElementById('billNo').textContent = currentBill.billNo;
+
+  // Print Summary Updates
+  document.getElementById('printSubtotal').textContent = subtotal.toFixed(2);
+  document.getElementById('printDiscount').textContent = discountVal.toFixed(2);
+  document.getElementById('printGstRate').textContent = currentBill.gst;
+  document.getElementById('printGstValue').textContent = gstVal.toFixed(2);
 
   updateCustomerInfo();
 }
@@ -593,6 +621,8 @@ function addMenuItem() {
   const nameInput = document.getElementById('newItemName');
   const unitInput = document.getElementById('newItemUnit');
   const rateInput = document.getElementById('newItemRate');
+  const editIdx = Number(document.getElementById('editingItemIndex').value);
+  
   const name = nameInput.value.trim();
   const unit = unitInput.value;
   const rate = Number(rateInput.value);
@@ -602,12 +632,18 @@ function addMenuItem() {
     return;
   }
 
-  const existingIdx = menu.findIndex(x => x.name.toLowerCase() === name.toLowerCase());
-  if (existingIdx >= 0) {
-    menu[existingIdx].rate = rate;
-    menu[existingIdx].unit = unit;
+  if(editIdx >= 0 && editIdx < menu.length) {
+    menu[editIdx] = { name, unit, rate };
+    document.getElementById('editingItemIndex').value = "-1";
+    document.getElementById('saveItemBtn').textContent = "+ Add Item";
   } else {
-    menu.push({ name, unit, rate });
+    const existingIdx = menu.findIndex(x => x.name.toLowerCase() === name.toLowerCase());
+    if (existingIdx >= 0) {
+      menu[existingIdx].rate = rate;
+      menu[existingIdx].unit = unit;
+    } else {
+      menu.push({ name, unit, rate });
+    }
   }
 
   localStorage.setItem('deepakGroceryMenu', JSON.stringify(menu));
@@ -629,6 +665,8 @@ function editMenuItem(index) {
   document.getElementById('newItemName').value = item.name;
   document.getElementById('newItemUnit').value = item.unit || 'PKT';
   document.getElementById('newItemRate').value = item.rate;
+  document.getElementById('editingItemIndex').value = index;
+  document.getElementById('saveItemBtn').textContent = "Update Item";
 }
 
 function showReports() {
