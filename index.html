@@ -68,6 +68,8 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
 .bill-summary-row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
 .bill-summary-row.bold{font-weight:bold;font-size:16px;color:#2e7d32}
 
+.amount-words-box{margin-top:8px;padding:6px;background:#f9f9f9;border:1px dashed #2e7d32;border-radius:6px;font-size:13px;color:#1b5e20}
+
 @media(max-width:750px){
   .grid{grid-template-columns:1fr}
   .row{grid-template-columns:1fr 1fr auto;gap:8px}
@@ -75,7 +77,10 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
   header{padding:15px}.section{padding:13px}
 }
 
-.bill-footer-desc{margin-top:20px;padding-top:10px;border-top:1px solid #ccc;font-size:12px;color:#555;text-align:center}
+.bill-footer-container{display:flex;justify-content:space-between;align-items:flex-end;margin-top:20px;padding-top:10px;border-top:1px solid #ccc}
+.bill-footer-desc{font-size:12px;color:#555;text-align:left;flex:1}
+.auth-signature{text-align:center;min-width:180px;font-size:12px;font-weight:bold;color:#333}
+.auth-signature-space{height:45px}
 
 @media print{
   body{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:13px;margin:0;padding:15px}
@@ -83,20 +88,23 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
   .container{max-width:100%;margin:0;padding:0}
   .section{box-shadow:none;padding:0;margin:0;border-radius:0}
   .grid{display:block}
-  .print-head{border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:15px;text-align:center}
+  .print-head{border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:15px;text-align:center;position:relative}
   .print-head h2{font-size:26px;color:#000;margin:0;font-weight:bold}
   .print-meta{font-size:13px;margin-top:8px;display:flex;justify-content:space-between;border-top:1px solid #ccc;padding-top:6px}
   .bill th, .bill td{padding:8px;font-size:13px;border-bottom:1px solid #aaa}
   .total{font-size:18px;text-align:right;margin-top:15px;border-top:2px solid #000;padding-top:8px}
+  .computer-gen-tag{position:absolute;top:0;right:0;font-size:10px;font-style:italic;color:#333;border:1px solid #777;padding:2px 6px;border-radius:4px}
   @page{size:A4 portrait;margin:15mm}
 }
 
 .hint{color:#666;font-size:13px;margin-top:-5px}
 .charge-row{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center}
 
-.print-head{text-align:center;border-bottom:2px solid #2e7d32;padding-bottom:10px;margin-bottom:12px}
+.print-head{text-align:center;border-bottom:2px solid #2e7d32;padding-bottom:10px;margin-bottom:12px;position:relative}
 .print-head h2{margin:0;color:#2e7d32;font-size:24px}.print-head>div{margin-top:4px}
 .print-meta{display:flex;justify-content:space-between;font-size:12px;margin-top:10px}
+.computer-gen-tag{position:absolute;top:8px;right:10px;font-size:10px;font-style:italic;color:#555;border:1px solid #2e7d32;padding:2px 6px;border-radius:4px;background:#fff}
+
 @media screen{.print-head{background:#f1f8e9;padding:12px;border-radius:10px}}
 
 .report-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:15px 0}
@@ -159,6 +167,7 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
   <div class="grid">
     <div class="section">
       <div class="print-head">
+        <span class="computer-gen-tag">This is a computer generated invoice</span>
         <h2>DEEPAK KITCHEN NOVELTY</h2>
         <div style="font-size:14px;font-weight:bold;">GROCERY & GENERAL STORE</div>
         <div style="font-size:12px;color:#444;">Deals in: Kitchenware, Spices, Grocery & Daily Essentials</div>
@@ -210,11 +219,18 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
         <div class="bill-summary-row"><span>Discount:</span><span>- ₹ <span id="printDiscount">0.00</span></span></div>
         <div class="bill-summary-row"><span>GST (<span id="printGstRate">0</span>%):</span><span>+ ₹ <span id="printGstValue">0.00</span></span></div>
         <div class="bill-summary-row bold"><span>Grand Total:</span><span>₹ <span id="total">0.00</span></span></div>
+        <div class="amount-words-box"><b>Amount in Words:</b> <span id="amountInWords">Rupees Zero Only</span></div>
       </div>
 
-      <div class="bill-footer-desc">
-        <p><b>Terms & Conditions:</b> Goods once sold will not be taken back without valid bill. Please check your items before leaving.</p>
-        <p><b>Thank You For Shopping With DEEPAK KITCHEN NOVELTY! Visit Again!</b></p>
+      <div class="bill-footer-container">
+        <div class="bill-footer-desc">
+          <p style="margin:0 0 4px 0;"><b>Terms & Conditions:</b> Goods once sold will not be taken back without valid bill. Please check your items before leaving.</p>
+          <p style="margin:0;"><b>Thank You For Shopping With DEEPAK KITCHEN NOVELTY! Visit Again!</b></p>
+        </div>
+        <div class="auth-signature">
+          <div class="auth-signature-space"></div>
+          <div>Authorised Signatory</div>
+        </div>
       </div>
 
       <div class="actions no-print">
@@ -336,6 +352,23 @@ let selectedSearchIndex = -1;
 window.onload = function() {
   initNewBill();
 };
+
+function numberToWords(num) {
+  let a = ['','One ','Two ','Three ','Four ','Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
+  let b = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+
+  num = Math.round(num);
+  if ((num = num.toString()).length > 9) return 'Overflow';
+  let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+  if (!n) return ''; 
+  let str = '';
+  str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+  str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+  str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+  str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+  str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+  return str.trim() ? 'Rupees ' + str.trim() + ' Only' : 'Rupees Zero Only';
+}
 
 function initNewBill() {
   currentBill = {
@@ -478,6 +511,9 @@ function render(){
   document.getElementById('gstValue').textContent = gstVal.toFixed(2);
   document.getElementById('total').textContent = grandTotal.toFixed(2);
   document.getElementById('billNo').textContent = currentBill.billNo;
+
+  // Amount in Words update
+  document.getElementById('amountInWords').textContent = numberToWords(grandTotal);
 
   // Print Summary Updates
   document.getElementById('printSubtotal').textContent = subtotal.toFixed(2);
