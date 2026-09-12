@@ -82,6 +82,15 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
 .auth-signature{text-align:center;min-width:180px;font-size:12px;font-weight:bold;color:#333}
 .auth-signature-space{height:45px}
 
+.print-head{text-align:center;border-bottom:2px solid #2e7d32;padding-bottom:10px;margin-bottom:12px;position:relative}
+.print-head h2{margin:0;color:#2e7d32;font-size:24px}.print-head>div{margin-top:4px}
+.print-meta{display:flex;justify-content:space-between;font-size:12px;margin-top:10px}
+
+/* Fix for computer-gen-tag position */
+.computer-gen-tag{position:absolute;top:4px;right:6px;font-size:9px;font-style:italic;color:#555;border:1px solid #2e7d32;padding:2px 5px;border-radius:4px;background:#fff;white-space:nowrap}
+
+@media screen{.print-head{background:#f1f8e9;padding:12px;border-radius:10px}}
+
 @media print{
   body{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:13px;margin:0;padding:15px}
   header,.back,.no-print,#cloudSetup,#cloudStatus,button,footer,.sidebar,.overlay,#loginModal{display:none!important}
@@ -93,19 +102,12 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
   .print-meta{font-size:13px;margin-top:8px;display:flex;justify-content:space-between;border-top:1px solid #ccc;padding-top:6px}
   .bill th, .bill td{padding:8px;font-size:13px;border-bottom:1px solid #aaa}
   .total{font-size:18px;text-align:right;margin-top:15px;border-top:2px solid #000;padding-top:8px}
-  .computer-gen-tag{position:absolute;top:0;right:0;font-size:10px;font-style:italic;color:#333;border:1px solid #777;padding:2px 6px;border-radius:4px}
+  .computer-gen-tag{position:absolute;top:0;right:0;font-size:9px;font-style:italic;color:#333;border:1px solid #777;padding:2px 4px;border-radius:4px;background:none}
   @page{size:A4 portrait;margin:15mm}
 }
 
 .hint{color:#666;font-size:13px;margin-top:-5px}
 .charge-row{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center}
-
-.print-head{text-align:center;border-bottom:2px solid #2e7d32;padding-bottom:10px;margin-bottom:12px;position:relative}
-.print-head h2{margin:0;color:#2e7d32;font-size:24px}.print-head>div{margin-top:4px}
-.print-meta{display:flex;justify-content:space-between;font-size:12px;margin-top:10px}
-.computer-gen-tag{position:absolute;top:8px;right:10px;font-size:10px;font-style:italic;color:#555;border:1px solid #2e7d32;padding:2px 6px;border-radius:4px;background:#fff}
-
-@media screen{.print-head{background:#f1f8e9;padding:12px;border-radius:10px}}
 
 .report-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:15px 0}
 .report-cards>div{background:#f1f8e9;border:1px solid #c8e6c9;border-radius:10px;padding:14px;text-align:center}
