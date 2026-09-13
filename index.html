@@ -52,6 +52,8 @@ input,select,button{font:inherit}input,select{width:100%;padding:10px;border:1px
 .add{background:linear-gradient(135deg, #009688, #00695c);color:white;border:0;border-radius:8px;padding:10px 16px;cursor:pointer;font-weight:bold}
 
 .bill{border-collapse:collapse;width:100%;margin-top:12px}.bill th,.bill td{border-bottom:1px solid #ddd;padding:9px;text-align:left}
+.bill td[contenteditable="true"]{background:#fffde7;outline:none;border-radius:4px;padding:6px 8px}
+.bill td[contenteditable="true"]:focus{background:#fff9c4;box-shadow:0 0 4px #2e7d32}
 .total{text-align:right;font-size:22px;font-weight:bold;margin-top:15px;color:#2e7d32}
 .back{margin-bottom:12px}
 
@@ -86,8 +88,8 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
 .print-head h2{margin:0;color:#2e7d32;font-size:24px}.print-head>div{margin-top:4px}
 .print-meta{display:flex;justify-content:space-between;font-size:12px;margin-top:10px}
 
-/* Fix for computer-gen-tag position */
-.computer-gen-tag{position:absolute;top:4px;right:6px;font-size:9px;font-style:italic;color:#555;border:1px solid #2e7d32;padding:2px 5px;border-radius:4px;background:#fff;white-space:nowrap}
+/* Position for computer-gen-tag at the bottom */
+.computer-gen-tag{text-align:center;font-size:10px;font-style:italic;color:#555;margin-top:15px;padding-top:6px;border-top:1px dashed #ccc}
 
 @media screen{.print-head{background:#f1f8e9;padding:12px;border-radius:10px}}
 
@@ -101,8 +103,9 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
   .print-head h2{font-size:26px;color:#000;margin:0;font-weight:bold}
   .print-meta{font-size:13px;margin-top:8px;display:flex;justify-content:space-between;border-top:1px solid #ccc;padding-top:6px}
   .bill th, .bill td{padding:8px;font-size:13px;border-bottom:1px solid #aaa}
+  .bill td[contenteditable="true"]{background:none!important;padding:8px!important}
   .total{font-size:18px;text-align:right;margin-top:15px;border-top:2px solid #000;padding-top:8px}
-  .computer-gen-tag{position:absolute;top:0;right:0;font-size:9px;font-style:italic;color:#333;border:1px solid #777;padding:2px 4px;border-radius:4px;background:none}
+  .computer-gen-tag{font-size:10px;font-style:italic;color:#333;text-align:center;margin-top:15px;padding-top:6px;border-top:1px dashed #aaa}
   @page{size:A4 portrait;margin:15mm}
 }
 
@@ -169,7 +172,6 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
   <div class="grid">
     <div class="section">
       <div class="print-head">
-        <span class="computer-gen-tag">This is a computer generated invoice</span>
         <h2>DEEPAK KITCHEN NOVELTY</h2>
         <div style="font-size:14px;font-weight:bold;">GROCERY & GENERAL STORE</div>
         <div style="font-size:12px;color:#444;">Deals in: Kitchenware, Spices, Grocery & Daily Essentials</div>
@@ -200,6 +202,8 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
         <input id="rate" type="number" min="0" value="0" placeholder="Rate" readonly>
         <button class="add" onclick="addItem()">+ Add Item</button>
       </div>
+
+      <p class="no-print" style="font-size:12px;color:#666;margin:4px 0;">💡 <i>Tip: Aap table ke kisi bhi item ke Name, Qty ya Rate par click karke direct edit kar sakte hain.</i></p>
 
       <table class="bill">
         <thead>
@@ -234,6 +238,9 @@ footer{background:#0d3b11;color:#fff;text-align:center;padding:12px;font-size:14
           <div>Authorised Signatory</div>
         </div>
       </div>
+
+      <!-- Tag moved to bottom of bill -->
+      <div class="computer-gen-tag">This is a computer generated invoice</div>
 
       <div class="actions no-print">
         <button class="primary" onclick="settleAndPrint()">🖨 Settle & Print Bill</button>
@@ -470,34 +477,31 @@ function addItem(){
   document.getElementById('item').focus();
 }
 
+function updateItemInline(index, field, value) {
+  if (field === 'name') {
+    currentBill.items[index].name = value.trim();
+  } else if (field === 'qty') {
+    let q = parseFloat(value) || 0;
+    currentBill.items[index].qty = q;
+  } else if (field === 'rate') {
+    let r = parseFloat(value) || 0;
+    currentBill.items[index].rate = r;
+  }
+  renderSummaryOnly();
+}
+
 function removeItem(index){
   currentBill.items.splice(index, 1);
   render();
 }
 
-function render(){
-  currentBill.payment = document.getElementById('payment').value;
-  currentBill.discount = Number(document.getElementById('discount').value || 0);
-  currentBill.discountType = document.getElementById('discountType').value;
-  currentBill.gst = Number(document.getElementById('discountGst').value || 0);
-
-  const tbody = document.getElementById('items');
-  tbody.innerHTML = '';
-
+function renderSummaryOnly(){
   let subtotal = 0;
   currentBill.items.forEach((item, index) => {
     const amt = item.qty * item.rate;
     subtotal += amt;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${escapeHtml(item.name)}</td>
-      <td>${item.qty}</td>
-      <td>${item.unit}</td>
-      <td>₹ ${item.rate}</td>
-      <td>₹ ${amt.toFixed(2)}</td>
-      <td class="no-print"><button class="btn-sm btn-del" onclick="removeItem(${index})">✕</button></td>
-    `;
-    tbody.appendChild(tr);
+    const amtElem = document.getElementById(`item-amt-${index}`);
+    if(amtElem) amtElem.textContent = `₹ ${amt.toFixed(2)}`;
   });
 
   let d = currentBill.discount;
@@ -512,17 +516,40 @@ function render(){
   document.getElementById('discountValue').textContent = discountVal.toFixed(2);
   document.getElementById('gstValue').textContent = gstVal.toFixed(2);
   document.getElementById('total').textContent = grandTotal.toFixed(2);
-  document.getElementById('billNo').textContent = currentBill.billNo;
 
-  // Amount in Words update
   document.getElementById('amountInWords').textContent = numberToWords(grandTotal);
 
-  // Print Summary Updates
   document.getElementById('printSubtotal').textContent = subtotal.toFixed(2);
   document.getElementById('printDiscount').textContent = discountVal.toFixed(2);
   document.getElementById('printGstRate').textContent = currentBill.gst;
   document.getElementById('printGstValue').textContent = gstVal.toFixed(2);
+}
 
+function render(){
+  currentBill.payment = document.getElementById('payment').value;
+  currentBill.discount = Number(document.getElementById('discount').value || 0);
+  currentBill.discountType = document.getElementById('discountType').value;
+  currentBill.gst = Number(document.getElementById('discountGst').value || 0);
+
+  const tbody = document.getElementById('items');
+  tbody.innerHTML = '';
+
+  currentBill.items.forEach((item, index) => {
+    const amt = item.qty * item.rate;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td contenteditable="true" oninput="updateItemInline(${index}, 'name', this.innerText)">${escapeHtml(item.name)}</td>
+      <td contenteditable="true" oninput="updateItemInline(${index}, 'qty', this.innerText)">${item.qty}</td>
+      <td>${item.unit}</td>
+      <td contenteditable="true" oninput="updateItemInline(${index}, 'rate', this.innerText.replace('₹','').trim())">₹ ${item.rate}</td>
+      <td id="item-amt-${index}">₹ ${amt.toFixed(2)}</td>
+      <td class="no-print"><button class="btn-sm btn-del" onclick="removeItem(${index})">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('billNo').textContent = currentBill.billNo;
+  renderSummaryOnly();
   updateCustomerInfo();
 }
 
